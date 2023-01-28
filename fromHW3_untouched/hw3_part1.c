@@ -166,7 +166,7 @@ unsigned long find_symbol(char* symbol_name, char* exe_file_name, int* error_val
     if (*error_val==0) ///if no error occurred
     {
         *error_val=1;
-        int retAddress = selectedSymbol->st_value;
+        Elf64_Addr retAddress = selectedSymbol->st_value;
         free(strtab);
         deleteSymtab(symtab, symtabNumOfSections);
         deleteSHT(sectionHeaderTable, header->e_shnum);

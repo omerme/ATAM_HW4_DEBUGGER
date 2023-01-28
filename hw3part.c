@@ -2,13 +2,12 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <signal.h>
-///#include <syscall.h> ///origin
-#include <sys/syscall.h> ///replacement
+#include <syscall.h> ///origin
+//#include <sys/syscall.h> ///replacement
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-///#include <sys/reg.h> ///origin
-#include "unistd.h"///replacement
+#include <sys/reg.h> ///origin
 #include <sys/user.h>
 #include <unistd.h>
 #include <errno.h>
@@ -166,6 +165,7 @@ unsigned long find_symbol(char* symbol_name, char* exe_file_name, int* error_val
         pread(elfDescriptor,shstrtab,shstrtabSectionHeader->sh_size,shstrtabSectionHeader->sh_offset);
         Elf64_Shdr* dynamicSectionHeader = NULL;
         Elf64_Shdr* relaPltHeader = NULL;
+///        Elf64_Shdr* dynSymHeader = NULL;
         for(int sectionNum=0; sectionNum<header->e_shnum; sectionNum++)
         {
             if(sectionHeaderTable[sectionNum]->sh_type == DYNAMIC_TYPE)
@@ -179,6 +179,10 @@ unsigned long find_symbol(char* symbol_name, char* exe_file_name, int* error_val
                     relaPltHeader = sectionHeaderTable[sectionNum];
                 }
             }
+///            if(sectionHeaderTable[sectionNum]->sh_type == DYNSYM_TYPE)
+///            {
+///                dynSymHeader = sectionHeaderTable[sectionNum];
+///            }
         }
         unsigned long relaNumOfSections = relaPltHeader->sh_size/relaPltHeader->sh_entsize;
         Elf64_Rela* relaPlt = (Elf64_Rela*)malloc(relaNumOfSections * sizeof(Elf64_Rela));
@@ -186,7 +190,8 @@ unsigned long find_symbol(char* symbol_name, char* exe_file_name, int* error_val
         Elf64_Addr dynamicSymbolLocation = 0;
         for(int relaNum=0; relaNum<relaNumOfSections; relaNum++)
         {
-            if(ELF64_R_SYM(relaPlt[relaNum].r_info) == dynamicSectionHeader->sh_offset+UNDCounter*dynamicSectionHeader->sh_entsize);
+            if(ELF64_R_SYM(relaPlt[relaNum].r_info) == UNDCounter) ///assuming dynsym is arranged like symtab.
+            ///need? -> dynamicSectionHeader->sh_offset+UNDCounter*dynamicSectionHeader->sh_entsize);
             {
                 dynamicSymbolLocation = relaPlt[relaNum].r_offset;
             }
@@ -214,7 +219,7 @@ unsigned long find_symbol(char* symbol_name, char* exe_file_name, int* error_val
     if (*error_val==0) ///if no error occurred
     {
         *error_val=1;
-        int retAddress = selectedSymbol->st_value;
+        Elf64_Addr retAddress = selectedSymbol->st_value;
         free(strtab);
         deleteSymtab(symtab, symtabNumOfSections);
         deleteSHT(sectionHeaderTable, header->e_shnum);
